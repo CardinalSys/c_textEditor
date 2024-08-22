@@ -1,3 +1,5 @@
+#include <windows.h>
+#include <commdlg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,52 +53,63 @@ SDL_Texture* PrepareText(SDL_Rect* textRect, TTF_Font* font, SDL_Color textColor
 }
 
 void LoadFile(char** retFile, int* size) {
-    printf("Input file location\n");
-    
+    OPENFILENAMEW ofn;
+    wchar_t filePath[1024] = { 0 };
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFile = filePath;
+    ofn.nMaxFile = sizeof(filePath) / sizeof(wchar_t);
+    ofn.lpstrFilter = L"Text Files\0*.txt\0All Files\0*.*\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = L"C:\\";
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER;
 
-    if (fgets(loc, sizeof(loc), stdin) == NULL) {
-        printf("Error: Invalid input\n");
-        exit(1);
-    }
+    filePath[0] = L'\0';
 
-    loc[strcspn(loc, "\n")] = '\0';
+    if (GetOpenFileNameW(&ofn)) {
+        wprintf(L"Selected file (full path): %ls\n", ofn.lpstrFile);
+        wprintf(L"File path length: %zu\n", wcslen(ofn.lpstrFile));
 
-    FILE* fptr = fopen(loc, "r");
-    if (!fptr) {
-        printf("Error: Could not open file\n");
-        exit(1);
-    }
+        FILE* fptr = _wfopen(ofn.lpstrFile, L"r");
+        if (!fptr) {
+            printf("Error opening file. errno: %d\n", errno);
+            perror("Error details");
+            return;
+        }
 
-    fseek(fptr, 0L, SEEK_END);
-    long sz = ftell(fptr);
-    fseek(fptr, 0L, SEEK_SET);
+        // Get file size
+        fseek(fptr, 0L, SEEK_END);
+        long sz = ftell(fptr);
+        fseek(fptr, 0L, SEEK_SET);
 
+        *retFile = (char*)malloc((sz + 1) * sizeof(char));
+        if (*retFile == NULL) {
+            perror("Error: Memory allocation failed");
+            fclose(fptr);
+            return;
+        }
 
-    *retFile = (char*)malloc(sz * sizeof(char));
-    if (*retFile == NULL) {
-        printf("Error: Memory allocation failed\n");
+        fread(*retFile, 1, sz, fptr);
+        (*retFile)[sz] = '\0';
+        *size = sz;
+
         fclose(fptr);
-        exit(1);
+        printf("File loaded successfully. Size: %d bytes\n", *size);
     }
-
-    char ch;
-
-    int i = 0;
-
-    do {
-        ch = fgetc(fptr);
-        (*retFile)[i] = ch;
-        i++;
-
-    } while (ch != EOF);
-
-    (*retFile)[sz] = '\0';
-
-    *size = sz;
-
-    fclose(fptr);
-
+    else {
+        DWORD error = CommDlgExtendedError();
+        if (error) {
+            printf("Error: Open file dialog failed with code %lu\n", error);
+        }
+        else {
+            printf("Open file dialog canceled.\n");
+        }
+    }
 }
+
 
 void SaveFile() {
     FILE* fptr = fopen(loc, "w");
