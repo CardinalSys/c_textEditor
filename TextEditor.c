@@ -26,6 +26,7 @@ SDL_Rect curTextRect;
 SDL_Color mainTextColor = { 255, 255, 0, 255 };
 
 TTF_Font* font;
+TTF_Font* textFont;
 
 char specialKeyPressed = 0;
 
@@ -33,6 +34,7 @@ int textSelectedSize = 0;
 
 char loc[256];
 
+textFontSize = 12;
 
 SDL_Texture* PrepareText(SDL_Rect* textRect, TTF_Font* font, SDL_Color textColor, const char* text, int x, int y) {
 
@@ -166,6 +168,21 @@ void HandleS() {
     }
 }
 
+void HandlePlus() {
+    if (specialKeyPressed != '1' || textFileSize <= 1)
+        return;
+    textFontSize++;
+    textFont = LoadFont(textFontSize);
+    curTextTexture = PrepareText(&curTextRect, textFont, mainTextColor, currentFileText, 10, 40);
+}
+
+void HandleMinus() {
+    if (specialKeyPressed != '1' || textFileSize <= 1)
+        return;
+    textFontSize--;
+    textFont = LoadFont(textFontSize);
+    curTextTexture = PrepareText(&curTextRect, textFont, mainTextColor, currentFileText, 10, 40);
+}
 
 
 typedef void (*KeyHandler)();
@@ -176,6 +193,8 @@ void InitializeKeyHandlers() {
     keyHandlers[SDL_SCANCODE_RETURN] = HandleEnter;
     keyHandlers[SDL_SCANCODE_LCTRL] = HandleCtrl;
     keyHandlers[SDL_SCANCODE_S] = HandleS;
+    keyHandlers[SDL_SCANCODE_KP_PLUS] = HandlePlus;
+    keyHandlers[SDL_SCANCODE_KP_MINUS] = HandleMinus;
 }
 
 
@@ -199,6 +218,7 @@ int main()
     };
 
     font = LoadFont(12);
+    textFont = LoadFont(textFontSize);
 
     app.window = SDL_CreateWindow("TextEditor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, windowFlags);
 
@@ -271,16 +291,17 @@ int main()
                 else if (x >= openFileTextRect.x && x <= openFileTextRect.x + openFileTextRect.w && y >= openFileTextRect.y && y <= openFileTextRect.y + openFileTextRect.h) {
                     drawDropDown = 0;
                     LoadFile(&currentFileText, &textFileSize);
-                    curTextTexture = PrepareText(&curTextRect, font, mainTextColor, currentFileText, 10, 40);
+                    curTextTexture = PrepareText(&curTextRect, textFont, mainTextColor, currentFileText, 10, 40);
                 }
                 else if (x >= saveFileTextRect.x && x <= saveFileTextRect.x + saveFileTextRect.w && y >= saveFileTextRect.y && y <= saveFileTextRect.y + saveFileTextRect.h) {
                     SaveFile();
                 }
             }
-            else if (event.type == SDL_TEXTINPUT && currentFileText != NULL) {
+            else if (event.type == SDL_TEXTINPUT && currentFileText != NULL && specialKeyPressed != '1') {
+
                 strcat(currentFileText, event.text.text);
                 textFileSize += strlen(event.text.text); 
-                curTextTexture = PrepareText(&curTextRect, font, mainTextColor, currentFileText, 10, 40);
+                curTextTexture = PrepareText(&curTextRect, textFont, mainTextColor, currentFileText, 10, 40);
             }
         }
 
