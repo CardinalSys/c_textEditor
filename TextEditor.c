@@ -11,6 +11,7 @@
 #define DEFAULT_FONT "C:/Windows/Fonts/arial.ttf"
 #define FPS 60
 #define FRAME_DURATION (1000/FPS)
+#define DEFAULT_FONT_SIZE 12
 
 typedef struct {
     SDL_Renderer* renderer;
@@ -34,7 +35,7 @@ int textSelectedSize = 0;
 
 char loc[256];
 
-textFontSize = 12;
+textFontSize = DEFAULT_FONT_SIZE;
 
 SDL_Texture* PrepareText(SDL_Rect* textRect, TTF_Font* font, SDL_Color textColor, const char* text, int x, int y) {
 
@@ -217,7 +218,7 @@ int main()
         exit(1);
     };
 
-    font = LoadFont(12);
+    font = LoadFont(DEFAULT_FONT_SIZE);
     textFont = LoadFont(textFontSize);
 
     app.window = SDL_CreateWindow("TextEditor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, windowFlags);
